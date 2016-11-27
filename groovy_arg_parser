@@ -1,0 +1,41 @@
+
+    Object run() {
+        String[] args = (String[])binding.getVariable('args');
+        MetaClass thisClazz = this.metaClass;
+        //it.declaringClass.name == thisClazz.theClass.name
+        List<MetaMethod> methods0 = thisClazz.methods.findAll {it.declaringClass.name == thisClazz.theClass.name};
+        if (args.length == 0) {
+            println 'specify arg'
+            println '    avalible : '+ methods0.collect{it.name}.unique().sort().join(',')
+            System.exit 1
+        }
+
+        String methodName = args[0];
+        println " running method : ${methodName}"
+        List<String> args2 = args as List;
+        args2.remove(0);
+        // &&    it.nativeParameterTypes.length == args2.size()
+        List<MetaMethod> methods = methods0.findAll { it.name == methodName};
+        if(methods.size()==0){
+            println 'wrong method, avalible : '+ methods0.collect{it.name}.unique().sort().join(',')
+            System.exit 1
+        }
+        List<MetaMethod> methods2 = methods.findAll {it.nativeParameterTypes.length == args2.size()}
+        if(methods2.size()!=1){
+            println 'wrong method args, avalible : '
+            println methods.collect{'('+it.nativeParameterTypes.collect {Class br -> br.simpleName}.join(',')+')' }.sort().join(';')
+            System.exit 1
+        }
+        MetaMethod method = methods2[0]
+        List args3=[];
+        args2.eachWithIndex { String entry, int i -> Object param =  args2[i].asType(method.nativeParameterTypes[i]);
+            if(param instanceof File){
+                File file = (File)param;
+                param=file.canonicalFile.absoluteFile;
+            }
+            args3.add(param)
+        }
+        method.invoke(this,args3.toArray())
+
+        println "finished ok"
+    }
